@@ -3,39 +3,44 @@ import streamlit as st
 
 st.set_page_config(page_title="PPC Insights Dashboard", layout="wide")
 
-# --------- Theme/UI ---------
 st.markdown(
     """
     <style>
-    .stApp {background: #f8fafa;}
-    .main-title {font-size: 2rem; font-weight: 800; color: #8a5100; margin: 0;}
-    .subtitle {font-size: 0.75rem; letter-spacing: .08em; text-transform: uppercase; color:#554434;}
-    .shell-card {background:#ffffff; border:1px solid #dbc2ad; border-radius:12px; padding:12px 16px;}
-    .section-title {font-size:1.1rem; font-weight:700; color:#191c1d; margin-bottom:8px;}
-    div[data-testid="stMetric"] {
-        background:#ffffff;
-        border:1px solid #dbc2ad;
-        border-radius:12px;
-        padding:10px 14px;
-    }
+    .stApp { background:#f8fafa; color:#191c1d; }
+    [data-testid="stSidebar"] { background:#f2f4f4; border-right:1px solid #dbc2ad; }
+    .block-container { max-width: 1440px; padding-top: 1rem; }
+    .top-shell { background:#fff; border:1px solid #dbc2ad; border-radius:12px; padding:14px 18px; margin-bottom:16px; }
+    .app-title { font-size:30px; line-height:1.1; font-weight:800; color:#8a5100; margin:0; }
+    .app-subtitle { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#554434; margin:0; }
+    .pill { background:#f2f4f4; border:1px solid #dbc2ad; border-radius:999px; padding:8px 12px; font-size:11px; font-weight:700; color:#554434; }
+    .panel { background:#fff; border:1px solid #dbc2ad; border-radius:12px; padding:14px; }
+    div[data-testid="stMetric"] { background:#fff; border:1px solid #dbc2ad; border-radius:12px; padding:12px; }
+    div[data-testid="stMetricLabel"] { text-transform:uppercase; letter-spacing:.06em; }
+    .section-head { font-size:18px; font-weight:700; margin:0 0 8px 0; }
+    div[data-testid="stDataFrame"] [role="row"]:nth-child(even) { background:#f8fafa; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 with st.sidebar:
-    st.markdown("## Ads Console")
+    st.markdown("### Ads Console")
     st.caption("Seller Central API")
-    st.markdown("- 📊 Dashboard\n- 🎯 Campaigns\n- 📦 Products\n- 🔑 Keywords")
+    st.markdown("**Dashboard**")
+    st.markdown("Campaigns")
+    st.markdown("Products")
+    st.markdown("Match Type")
+    st.markdown("Keywords")
+    st.markdown("Search Terms")
+    st.markdown("ASIN Targets")
+    st.markdown("Auto Campaigns")
 
-header_left, header_right = st.columns([3, 1])
-with header_left:
-    st.markdown("<p class='main-title'>PPC Insights</p>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Seller Central API Dashboard</p>", unsafe_allow_html=True)
-with header_right:
-    st.markdown("<div class='shell-card subtitle' style='text-align:center;'>Date Range: Last 30 Days</div>", unsafe_allow_html=True)
+left, right = st.columns([3, 1])
+with left:
+    st.markdown("<div class='top-shell'><p class='app-title'>PPC Insights</p><p class='app-subtitle'>Seller Central API Dashboard</p></div>", unsafe_allow_html=True)
+with right:
+    st.markdown("<div class='top-shell' style='display:flex;align-items:center;justify-content:center;min-height:72px;'><span class='pill'>Date Range: Last 30 Days</span></div>", unsafe_allow_html=True)
 
-# --------- Data logic ---------
 COLUMN_MAPPING = {
     "impressions": ["Impressions"],
     "clicks": ["Clicks"],
@@ -59,7 +64,6 @@ def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
             if candidate in df.columns:
                 rename_map[candidate] = standard_name
                 break
-
     standardized = df.rename(columns=rename_map).copy()
     for required in COLUMN_MAPPING:
         if required not in standardized.columns:
@@ -83,8 +87,7 @@ def to_numeric(series: pd.Series) -> pd.Series:
 def safe_divide(numerator: float, denominator: float) -> float:
     return numerator / denominator if denominator else 0.0
 
-
-st.markdown("<div class='shell-card'>", unsafe_allow_html=True)
+st.markdown("<div class='panel'>", unsafe_allow_html=True)
 uploaded_files = st.file_uploader(
     "Upload Amazon PPC report files (.csv or .xlsx)",
     type=["csv", "xlsx"],
@@ -116,18 +119,18 @@ ctr = safe_divide(totals["clicks"], totals["impressions"])
 cvr = safe_divide(totals["orders"], totals["clicks"])
 acos = safe_divide(totals["spend"], totals["sales"])
 
-metric_rows = [
+rows = [
     [("Impressions", f"{totals['impressions']:,.0f}"), ("Clicks", f"{totals['clicks']:,.0f}"), ("Spend", f"${totals['spend']:,.2f}")],
     [("Sales", f"${totals['sales']:,.2f}"), ("Orders", f"{totals['orders']:,.0f}"), ("Units", f"{totals['units']:,.0f}")],
     [("CTR", f"{ctr:.2%}"), ("CVR", f"{cvr:.2%}"), ("ACoS", f"{acos:.2%}")],
 ]
 
-for row in metric_rows:
+for row in rows:
     cols = st.columns(3)
     for col, (label, value) in zip(cols, row):
         col.metric(label, value)
 
-st.markdown("<p class='section-title'>Performance by Campaign Name</p>", unsafe_allow_html=True)
+st.markdown("<div class='panel' style='margin-top:16px;'><p class='section-head'>Performance by Campaign Name</p></div>", unsafe_allow_html=True)
 if "Campaign Name" in combined.columns:
     campaign_summary = (
         combined.groupby("Campaign Name", dropna=False)[["impressions", "clicks", "spend", "sales", "orders", "units"]]
@@ -136,7 +139,6 @@ if "Campaign Name" in combined.columns:
         .sort_values("sales", ascending=False)
     )
     campaign_summary["ACoS"] = campaign_summary.apply(lambda r: safe_divide(r["spend"], r["sales"]), axis=1)
-
     st.dataframe(campaign_summary, use_container_width=True, hide_index=True)
 else:
     st.warning("'Campaign Name' column not found in uploaded files.")
