@@ -95,26 +95,24 @@ uploaded_files = st.file_uploader(
 )
 st.markdown("</div>", unsafe_allow_html=True)
 
-if not uploaded_files:
-    st.info("Upload one or more files to populate KPIs and campaign table.")
-    st.stop()
-
 all_data = []
-for file in uploaded_files:
-    try:
-        all_data.append(standardize_columns(load_file(file)))
-    except Exception as exc:
-        st.error(f"Could not process {file.name}: {exc}")
+if not uploaded_files:
+    st.info("Upload files to replace placeholder zeros with live metrics.")
+else:
+    for file in uploaded_files:
+        try:
+            all_data.append(standardize_columns(load_file(file)))
+        except Exception as exc:
+            st.error(f"Could not process {file.name}: {exc}")
 
-if not all_data:
-    st.warning("No valid files were processed.")
-    st.stop()
+if all_data:
+    combined = pd.concat(all_data, ignore_index=True)
+    for col in ["impressions", "clicks", "spend", "sales", "orders", "units"]:
+        combined[col] = to_numeric(combined[col])
+else:
+    combined = pd.DataFrame(columns=["Campaign Name", "impressions", "clicks", "spend", "sales", "orders", "units"])
 
-combined = pd.concat(all_data, ignore_index=True)
-for col in ["impressions", "clicks", "spend", "sales", "orders", "units"]:
-    combined[col] = to_numeric(combined[col])
-
-totals = {k: float(combined[k].sum()) for k in ["impressions", "clicks", "spend", "sales", "orders", "units"]}
+totals = {k: float(combined[k].sum()) if k in combined.columns else 0.0 for k in ["impressions", "clicks", "spend", "sales", "orders", "units"]}
 ctr = safe_divide(totals["clicks"], totals["impressions"])
 cvr = safe_divide(totals["orders"], totals["clicks"])
 acos = safe_divide(totals["spend"], totals["sales"])
@@ -131,7 +129,7 @@ for row in rows:
         col.metric(label, value)
 
 st.markdown("<div class='panel' style='margin-top:16px;'><p class='section-head'>Performance by Campaign Name</p></div>", unsafe_allow_html=True)
-if "Campaign Name" in combined.columns:
+if all_data and "Campaign Name" in combined.columns:
     campaign_summary = (
         combined.groupby("Campaign Name", dropna=False)[["impressions", "clicks", "spend", "sales", "orders", "units"]]
         .sum()
@@ -140,5 +138,7 @@ if "Campaign Name" in combined.columns:
     )
     campaign_summary["ACoS"] = campaign_summary.apply(lambda r: safe_divide(r["spend"], r["sales"]), axis=1)
     st.dataframe(campaign_summary, use_container_width=True, hide_index=True)
-else:
+elif uploaded_files:
     st.warning("'Campaign Name' column not found in uploaded files.")
+else:
+    st.dataframe(combined, use_container_width=True, hide_index=True)
