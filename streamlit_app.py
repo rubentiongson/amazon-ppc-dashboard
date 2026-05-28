@@ -6,18 +6,27 @@ st.set_page_config(page_title="PPC Insights Dashboard", layout="wide")
 st.markdown(
     """
     <style>
-    .stApp { background:#f8fafa; color:#191c1d; }
+    .stApp { background:#f8fafa; color:#191c1d; font-family: Inter, sans-serif; }
     [data-testid="stSidebar"] { background:#f2f4f4; border-right:1px solid #dbc2ad; }
-    .block-container { max-width: 1440px; padding-top: 5.5rem; padding-bottom: 1.5rem; }
-    .top-shell { background:#fff; border:1px solid #dbc2ad; border-radius:12px; padding:14px 18px; margin-bottom:16px; }
-    .app-title { font-size:30px; line-height:1.1; font-weight:800; color:#8a5100; margin:0; }
-    .app-subtitle { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#554434; margin:0; }
-    .pill { background:#f2f4f4; border:1px solid #dbc2ad; border-radius:999px; padding:8px 12px; font-size:11px; font-weight:700; color:#554434; }
+    .block-container { max-width: 1440px; padding-top: 4.5rem; padding-bottom: 2rem; }
+
+    .shell { background:#fff; border:1px solid #dbc2ad; border-radius:12px; }
+    .topbar { padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+    .title { color:#8a5100; font-size:28px; font-weight:700; margin:0; }
+    .caps { color:#554434; font-size:11px; letter-spacing:.06em; text-transform:uppercase; font-weight:700; }
+    .chip { background:#f2f4f4; border:1px solid #dbc2ad; border-radius:999px; padding:8px 12px; }
+
     .panel { background:#fff; border:1px solid #dbc2ad; border-radius:12px; padding:14px; }
-    div[data-testid="stMetric"] { background:#fff; border:1px solid #dbc2ad; border-radius:12px; padding:12px; }
-    div[data-testid="stMetricLabel"] { text-transform:uppercase; letter-spacing:.06em; }
-    .section-head { font-size:18px; font-weight:700; margin:0 0 8px 0; }
-    div[data-testid="stDataFrame"] [role="row"]:nth-child(even) { background:#f8fafa; }
+    .panel h4 { margin:0; font-size:18px; }
+
+    div[data-testid="stMetric"] { background:#fff; border:1px solid #dbc2ad; border-radius:10px; padding:12px; }
+    div[data-testid="stMetricLabel"] { text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+
+    .alert { border-left:4px solid #535f70; background:#d4e1f5; color:#101c2b; border-radius:8px; padding:10px 12px; font-size:13px; }
+    .tip { border-left:4px solid #8a5100; background:#ffdcbd; color:#653a00; border-radius:8px; padding:10px 12px; font-size:13px; }
+    .upgrade { background:#adecff; border:1px solid #6abdd3; border-radius:10px; padding:12px; text-align:center; font-size:12px; }
+
+    div[data-testid="stDataFrame"] [role="row"]:nth-child(even){ background:#f8fafa; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -27,19 +36,22 @@ with st.sidebar:
     st.markdown("### Ads Console")
     st.caption("Seller Central API")
     st.markdown("**Dashboard**")
-    st.markdown("Campaigns")
-    st.markdown("Products")
-    st.markdown("Match Type")
-    st.markdown("Keywords")
-    st.markdown("Search Terms")
-    st.markdown("ASIN Targets")
-    st.markdown("Auto Campaigns")
+    for item in ["Campaigns", "Products", "Match Type", "Keywords", "Search Terms", "ASIN Targets", "ASIN from STR", "Auto Campaigns", "Category Targets", "Wasted Ad Spend"]:
+        st.markdown(item)
+    st.button("Sync Data", use_container_width=True)
 
-left, right = st.columns([3, 1])
-with left:
-    st.markdown("<div class='top-shell'><p class='app-title'>PPC Insights</p><p class='app-subtitle'>Seller Central API Dashboard</p></div>", unsafe_allow_html=True)
-with right:
-    st.markdown("<div class='top-shell' style='display:flex;align-items:center;justify-content:center;min-height:72px;'><span class='pill'>Date Range: Last 30 Days</span></div>", unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class='shell topbar'>
+      <div>
+        <p class='title'>PPC Insights</p>
+        <div class='caps'>Seller Central API Dashboard</div>
+      </div>
+      <div class='chip caps'>Date Range: Last 30 Days</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 COLUMN_MAPPING = {
     "impressions": ["Impressions"],
@@ -96,9 +108,7 @@ uploaded_files = st.file_uploader(
 st.markdown("</div>", unsafe_allow_html=True)
 
 all_data = []
-if not uploaded_files:
-    st.info("Upload files to replace placeholder zeros with live metrics.")
-else:
+if uploaded_files:
     for file in uploaded_files:
         try:
             all_data.append(standardize_columns(load_file(file)))
@@ -110,6 +120,7 @@ if all_data:
     for col in ["impressions", "clicks", "spend", "sales", "orders", "units"]:
         combined[col] = to_numeric(combined[col])
 else:
+    st.info("Upload files to populate dashboard data.")
     combined = pd.DataFrame(columns=["Campaign Name", "impressions", "clicks", "spend", "sales", "orders", "units"])
 
 totals = {k: float(combined[k].sum()) if k in combined.columns else 0.0 for k in ["impressions", "clicks", "spend", "sales", "orders", "units"]}
@@ -117,18 +128,29 @@ ctr = safe_divide(totals["clicks"], totals["impressions"])
 cvr = safe_divide(totals["orders"], totals["clicks"])
 acos = safe_divide(totals["spend"], totals["sales"])
 
-rows = [
-    [("Impressions", f"{totals['impressions']:,.0f}"), ("Clicks", f"{totals['clicks']:,.0f}"), ("Spend", f"${totals['spend']:,.2f}")],
-    [("Sales", f"${totals['sales']:,.2f}"), ("Orders", f"{totals['orders']:,.0f}"), ("Units", f"{totals['units']:,.0f}")],
-    [("CTR", f"{ctr:.2%}"), ("CVR", f"{cvr:.2%}"), ("ACoS", f"{acos:.2%}")],
+kpi = [
+    ("Impressions", f"{totals['impressions']:,.0f}"),
+    ("Clicks", f"{totals['clicks']:,.0f}"),
+    ("Spend", f"${totals['spend']:,.2f}"),
+    ("Sales", f"${totals['sales']:,.2f}"),
+    ("Orders", f"{totals['orders']:,.0f}"),
+    ("Units", f"{totals['units']:,.0f}"),
+    ("CTR", f"{ctr:.2%}"),
+    ("CVR", f"{cvr:.2%}"),
+    ("ACoS", f"{acos:.2%}"),
 ]
-
-for row in rows:
+for i in range(0, 9, 3):
     cols = st.columns(3)
-    for col, (label, value) in zip(cols, row):
+    for col, (label, value) in zip(cols, kpi[i:i+3]):
         col.metric(label, value)
 
-st.markdown("<div class='panel' style='margin-top:16px;'><p class='section-head'>Performance by Campaign Name</p></div>", unsafe_allow_html=True)
+left, right = st.columns([3, 1])
+with left:
+    st.markdown("<div class='panel'><h4>Performance Trends</h4><div style='height:220px;margin-top:12px;background-image:linear-gradient(to right,#f0f2f2 1px,transparent 1px),linear-gradient(to bottom,#f0f2f2 1px,transparent 1px);background-size:40px 40px;border-left:1px solid #dbc2ad;border-bottom:1px solid #dbc2ad;'></div></div>", unsafe_allow_html=True)
+with right:
+    st.markdown("<div class='panel'><h4>Insights & Alerts</h4><div class='alert' style='margin-top:10px;'>Budget alert: 3 campaigns nearing daily budget limit.</div><div class='tip' style='margin-top:10px;'>Optimization tip: Lowering bids on keyword_x could save $45/day.</div><div class='upgrade' style='margin-top:10px;'>Unlock AI insights for predictive keyword scaling.</div></div>", unsafe_allow_html=True)
+
+st.markdown("<div class='panel' style='margin-top:16px;'><h4>Top Performing Campaigns</h4></div>", unsafe_allow_html=True)
 if all_data and "Campaign Name" in combined.columns:
     campaign_summary = (
         combined.groupby("Campaign Name", dropna=False)[["impressions", "clicks", "spend", "sales", "orders", "units"]]
