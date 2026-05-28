@@ -1,3 +1,12 @@
+codex/create-amazon-ppc-dashboard-web-app-0hrlu9
+"""Streamlit entrypoint shim.
+
+Some environments default to running `app.py`. This module ensures the
+main dashboard in `streamlit_app.py` is loaded regardless of entrypoint.
+"""
+
+from streamlit_app import *  # noqa: F401,F403
+
 codex/create-amazon-ppc-dashboard-web-app-hurcrc
 """Streamlit entrypoint shim.
 
@@ -312,5 +321,6 @@ codex/create-amazon-ppc-dashboard-web-app-kjuziu
 main
 
  main
+main
 main
 main
