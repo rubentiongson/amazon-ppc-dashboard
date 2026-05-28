@@ -1,3 +1,12 @@
+codex/create-streamlit-app-for-amazon-ppc-reports
+"""Streamlit entrypoint shim.
+
+Some environments default to running `app.py`. This module ensures the
+main dashboard in `streamlit_app.py` is loaded regardless of entrypoint.
+"""
+
+from streamlit_app import *  # noqa: F401,F403
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -290,4 +299,8 @@ st.dataframe(
         "Sales": st.column_config.NumberColumn(format="$%.2f"),
     },
 )
+codex/create-amazon-ppc-dashboard-web-app-kjuziu
+main
+=======
+ main
 main
