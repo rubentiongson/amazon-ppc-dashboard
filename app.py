@@ -1,5 +1,7 @@
-import streamlit as st
+"""Streamlit entrypoint shim.
 
-st.set_page_config(page_title="Amazon PPC Dashboard", layout="wide")
-st.title("Amazon PPC Dashboard")
-st.write("✅ App is live on Streamlit Cloud.")
+Some environments default to running `app.py`. This module ensures the
+main dashboard in `streamlit_app.py` is loaded regardless of entrypoint.
+"""
+
+from streamlit_app import *  # noqa: F401,F403
