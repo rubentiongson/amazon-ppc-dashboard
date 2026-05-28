@@ -8,7 +8,7 @@ st.markdown(
     <style>
     .stApp { background:#f8fafa; color:#191c1d; }
     [data-testid="stSidebar"] { background:#f2f4f4; border-right:1px solid #dbc2ad; }
-    .block-container { max-width: 1440px; padding-top: 1rem; }
+    .block-container { max-width: 1440px; padding-top: 5.5rem; padding-bottom: 1.5rem; }
     .top-shell { background:#fff; border:1px solid #dbc2ad; border-radius:12px; padding:14px 18px; margin-bottom:16px; }
     .app-title { font-size:30px; line-height:1.1; font-weight:800; color:#8a5100; margin:0; }
     .app-subtitle { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#554434; margin:0; }
